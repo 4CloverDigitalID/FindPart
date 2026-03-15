@@ -29,8 +29,25 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
+            'role' => fake()->randomElement(['startup', 'talent']),
+            'avatar' => null,
+            'is_verified' => fake()->boolean(),
             'remember_token' => Str::random(10),
         ];
+    }
+
+    public function startup(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'role' => 'startup',
+        ]);
+    }
+
+    public function talent(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'role' => 'talent',
+        ]);
     }
 
     /**

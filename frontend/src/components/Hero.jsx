@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
@@ -16,9 +17,9 @@ const Hero = () => {
             <h1 style={{ fontFamily: "Poppins" }} className="text-white text-8xl font-semibold mb-3">
             FindPart
             </h1>
-            <button style={{ fontFamily: "inter" }} className="bg-yellow-400 text-black px-15 py-3 rounded-xl font-semibold cursor-pointer hover:bg-yellow-500 transition text-xl">
+            <Link to="/register" style={{ fontFamily: "inter" }} className="bg-yellow-400 text-black px-15 py-3 rounded-xl font-semibold cursor-pointer hover:bg-yellow-500 transition text-xl">
             Gabung Sekarang
-            </button>
+            </Link>
       </div>
     </div>
   )

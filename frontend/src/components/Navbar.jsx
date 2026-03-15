@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
@@ -25,13 +26,13 @@ const Navbar = () => {
         </ul>
 
         <div style={{ fontFamily: "inter" }} className="flex items-center gap-3">
-          <button className="bg-yellow-400 text-black px-10 py-2 rounded-xl">
+          <Link to="/login" className="bg-yellow-400 text-black px-10 py-2 rounded-xl">
             Masuk
-          </button>
+          </Link>
 
-          <button className="bg-gray-200 text-black px-10 py-2 rounded-xl">
+          <Link to="/register" className="bg-gray-200 text-black px-10 py-2 rounded-xl">
             Daftar
-          </button>
+          </Link>
 
         </div>
 

@@ -1,14 +1,40 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import LandingPages from "./pages/LandingPages";
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import ProtectedRoute from './components/frontend/ProtectedRoute'
+import ChatPage from './pages/ChatPage'
+import Dashboard from './pages/Dashboard'
+import MatchesPage from './pages/MatchesPage'
+import ProfilePage from './pages/ProfilePage'
+import SwipePage from './pages/SwipePage'
+import Login from './pages/auth/Login'
+import Register from './pages/auth/Register'
+import StartupOnboarding from './pages/onboarding/StartupOnboarding'
+import TalentOnboarding from './pages/onboarding/TalentOnboarding'
+import SelectRole from './pages/onboarding/SelectRole'
+import LandingPages from './pages/LandingPages'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPages />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/onboarding/role" element={<SelectRole />} />
+
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/onboarding/startup" element={<StartupOnboarding />} />
+          <Route path="/onboarding/talent" element={<TalentOnboarding />} />
+          <Route path="/swipe" element={<SwipePage />} />
+          <Route path="/matches" element={<MatchesPage />} />
+          <Route path="/matches/:id/chat" element={<ChatPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
+
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
-  );
+  )
 }
 
-export default App;
+export default App
