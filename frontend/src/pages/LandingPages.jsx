@@ -8,6 +8,8 @@ import WhySection from '../components/WhySection'
 import FAQSection from '../components/FAQSection'
 import Footer from '../components/Footer'
 
+
+
 const LandingPages = () => {
   return (
     <div className=' bg-[#F8FAFC]'>
