@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import api from '../api/axios'
-import AppShell from '../components/frontend/AppShell'
 import MatchModal from '../components/frontend/MatchModal'
 import SwipeCard from '../components/frontend/SwipeCard'
 import { useSwipe } from '../hooks/useSwipe'

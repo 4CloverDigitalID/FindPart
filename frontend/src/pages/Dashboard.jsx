@@ -468,7 +468,6 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* ── RIGHT PANEL ── */}
                 <div className="space-y-5">
                   {/* Conversations */}
                   <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">

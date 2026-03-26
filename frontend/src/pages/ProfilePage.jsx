@@ -212,7 +212,9 @@ export default function ProfilePage() {
     }
   }
 
- if (meQuery.isLoading) return <div className="p-6">Memuat profil...</div>
+ if (meQuery.isLoading) return <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
+              <div className="w-8 h-8 border-2 border-yellow-300 border-t-yellow-500 rounded-full animate-spin" />
+            </div>
 if (meQuery.isError) return <div className="p-6">Gagal memuat profil.</div>
 
   return (

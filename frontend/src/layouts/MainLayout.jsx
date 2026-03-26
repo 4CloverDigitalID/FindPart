@@ -112,7 +112,6 @@ export default function MainLayout() {
     { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
     { icon: Compass, label: "Discover", to: "/swipe" },
     { icon: Flame, label: "Matches", to: "/matches" },
-    { icon: MessageCircle, label: "Messages", to: "/matches" },
     { icon: UserCircle, label: "Profile", to: "/profile" },
   ];
 
