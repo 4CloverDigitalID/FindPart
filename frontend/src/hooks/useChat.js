@@ -1,67 +1,56 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../api/axios'
 import { getEcho } from '../lib/echo'
 import { useAuthStore } from '../store/authStore'
 
 export function useChat(matchId) {
   const token = useAuthStore((state) => state.token)
-  const [messages, setMessages] = useState([])
-  const [conversationId, setConversationId] = useState(null)
+  const queryClient = useQueryClient()
+
+  // Ensure query key explicitly casts to string to avoid mismatch bugs
+  const queryKey = ['conversation', String(matchId)]
 
   const conversationQuery = useQuery({
-    queryKey: ['conversation', matchId],
+    queryKey,
     enabled: Boolean(matchId),
     queryFn: async () => {
       const { data } = await api.get(`/conversations/${matchId}`)
       return data
     },
+    // We want the chat layout to refresh easily when told to
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   })
 
+  // Set up Laravel Echo WebSocket Listener
   useEffect(() => {
-    if (conversationQuery.data) {
-      setConversationId(conversationQuery.data.conversation_id)
-      setMessages(conversationQuery.data.messages || [])
-    }
-  }, [conversationQuery.data])
-
-  useEffect(() => {
+    const conversationId = conversationQuery.data?.conversation_id
     if (!conversationId || !token) {
       return undefined
     }
 
     const echo = getEcho(token)
-
-    if (!echo) {
-      return undefined
-    }
+    if (!echo) return undefined
 
     const channel = echo.private(`conversation.${conversationId}`)
 
-    const pushMessage = (event) => {
-      const incomingMessage = {
-        id: event.id,
-        body: event.body,
-        sender: event.sender,
-        created_at: event.created_at,
-      }
-
-      setMessages((prev) => {
-        if (prev.some((message) => message.id === incomingMessage.id)) {
-          return prev
-        }
-
-        return [...prev, incomingMessage]
-      })
+    const triggerUpdate = () => {
+      // Upon ANY new socket event, completely invalidate the cache! 
+      // This commands the browser to instantly redownload the chat.
+      queryClient.invalidateQueries({ queryKey })
     }
 
-    channel.listen('.MessageSent', pushMessage)
+    // We listen to both formats just in case the backend implicit routing varies
+    channel.listen('.MessageSent', triggerUpdate)
+    channel.listen('MessageSent', triggerUpdate)
 
     return () => {
       channel.stopListening('.MessageSent')
+      channel.stopListening('MessageSent')
       echo.leave(`conversation.${conversationId}`)
     }
-  }, [conversationId, token])
+  }, [conversationQuery.data?.conversation_id, token, matchId, queryClient])
 
   const sendMessageMutation = useMutation({
     mutationFn: async (body) => {
@@ -71,25 +60,25 @@ export function useChat(matchId) {
       })
       return data
     },
-    onSuccess: (newMessage) => {
-      setMessages((prev) => {
-        if (prev.some((message) => message.id === newMessage.id)) {
-          return prev
-        }
-
-        return [...prev, newMessage]
-      })
+    // Fire the invalidation the very millisecond the backend confirms receipt
+    onSettled: () => {
+      // Destroys the cache and triggers a silent refetch
+      queryClient.invalidateQueries({ queryKey })
     },
   })
 
+  // Direct pull from the actively updating server state
+  const rawMessages = conversationQuery.data?.messages || []
+
+  // Ensure perfect chronological ordering
   const sortedMessages = useMemo(
-    () => [...messages].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)),
-    [messages],
+    () => [...rawMessages].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)),
+    [rawMessages],
   )
 
   return {
     messages: sortedMessages,
-    conversationId,
+    conversationId: conversationQuery.data?.conversation_id,
     conversationQuery,
     sendMessageMutation,
   }

@@ -30,8 +30,8 @@ function App() {
             <Route path="/swipe" element={<SwipePage />} />
             <Route path="/matches" element={<MatchesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/matches/:id/chat" element={<ChatPage />} />
           </Route>
-          <Route path="/matches/:id/chat" element={<ChatPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
