@@ -7,7 +7,6 @@ import { useAuthStore } from '../store/authStore'
 function getInitialRoleForm(user) {
   if (user?.role === 'startup') {
     const profile = user.startup_profile || {}
-
     return {
       company_name: profile.company_name || '',
       tagline: profile.tagline || '',
@@ -21,9 +20,7 @@ function getInitialRoleForm(user) {
       pitch_deck_url: profile.pitch_deck_url || '',
     }
   }
-
   const profile = user?.talent_profile || {}
-
   return {
     bio: profile.bio || '',
     skills: Array.isArray(profile.skills) ? profile.skills.join(', ') : '',
@@ -37,6 +34,91 @@ function getInitialRoleForm(user) {
     resume_url: profile.resume_url || '',
     portfolio_url: profile.portfolio_url || '',
   }
+}
+
+const stageOptions = [
+  { value: 'idea', label: 'Idea',  },
+  { value: 'mvp', label: 'MVP', },
+  { value: 'growth', label: 'Growth',  },
+  { value: 'scaling', label: 'Scaling',  },
+]
+
+const workTypeOptions = [
+  { value: 'remote', label: 'Remote',  },
+  { value: 'onsite', label: 'On-site',  },
+  { value: 'hybrid', label: 'Hybrid',  },
+]
+
+const availabilityOptions = [
+  { value: 'immediately', label: 'Sekarang',  },
+  { value: '1month', label: '1 Bulan',},
+  { value: '3months', label: '3 Bulan',  },
+]
+
+// Shared field components
+function FieldLabel({ children }) {
+  return (
+    <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-widest text-stone-500">
+      {children}
+    </label>
+  )
+}
+
+function Input({ className = '', ...props }) {
+  return (
+    <input
+      className={`ob-input w-full rounded-xl border-[1.5px] border-stone-200 bg-[#fafaf8] px-3.5 py-[11px] text-sm text-stone-900 placeholder-stone-300 transition-all ${className}`}
+      {...props}
+    />
+  )
+}
+
+function Textarea({ className = '', ...props }) {
+  return (
+    <textarea
+      className={`ob-textarea w-full rounded-xl border-[1.5px] border-stone-200 bg-[#fafaf8] px-3.5 py-[11px] text-sm text-stone-900 placeholder-stone-300 transition-all min-h-[96px] resize-y leading-relaxed ${className}`}
+      {...props}
+    />
+  )
+}
+
+function SectionTitle({ children }) {
+  return (
+    <div className="section-divider flex items-center gap-2.5">
+      <span className="font-syne text-[10.5px] font-bold uppercase tracking-[0.1em] text-stone-300 whitespace-nowrap">
+        {children}
+      </span>
+    </div>
+  )
+}
+
+function SaveButton({ loading, label = 'Simpan', loadingLabel = 'Menyimpan...' }) {
+  return (
+    <button
+      type="submit"
+      disabled={loading}
+      className="font-syne flex items-center gap-2.5 rounded-xl border-none bg-amber-400 px-5 py-2.5 text-sm font-bold tracking-wide text-stone-900 shadow-[0_4px_16px_rgba(251,191,36,0.35),0_1px_3px_rgba(0,0,0,0.1)] transition-all hover:bg-amber-500 hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(251,191,36,0.45)] disabled:cursor-not-allowed disabled:opacity-60 disabled:translate-y-0"
+    >
+      {loading ? loadingLabel : label}
+      {!loading && (
+        <span className="flex h-[20px] w-[20px] items-center justify-center rounded-md bg-black/10 text-xs">✓</span>
+      )}
+    </button>
+  )
+}
+
+function StatusMsg({ error, success }) {
+  if (error) return (
+    <div className="flex items-center gap-2 rounded-xl border-[1.5px] border-red-300 bg-red-50 px-3.5 py-2.5 text-[13px] text-red-600">
+      {error}
+    </div>
+  )
+  if (success) return (
+    <div className="flex items-center gap-2 rounded-xl border-[1.5px] border-green-300 bg-green-50 px-3.5 py-2.5 text-[13px] text-green-700">
+      {success}
+    </div>
+  )
+  return null
 }
 
 export default function ProfilePage() {
@@ -58,29 +140,17 @@ export default function ProfilePage() {
   })
 
   useEffect(() => {
-    if (!meQuery.data) {
-      return
-    }
-
+    if (!meQuery.data) return
     setUser(meQuery.data)
-    setAccountForm({
-      name: meQuery.data.name || '',
-      email: meQuery.data.email || '',
-    })
+    setAccountForm({ name: meQuery.data.name || '', email: meQuery.data.email || '' })
     setRoleForm(getInitialRoleForm(meQuery.data))
   }, [meQuery.data, setUser])
 
   const user = meQuery.data
 
   const roleLabel = useMemo(() => {
-    if (user?.role === 'startup') {
-      return 'Startup'
-    }
-
-    if (user?.role === 'talent') {
-      return 'Talent'
-    }
-
+    if (user?.role === 'startup') return 'Startup'
+    if (user?.role === 'talent') return 'Talent'
     return '-'
   }, [user?.role])
 
@@ -90,367 +160,400 @@ export default function ProfilePage() {
 
   const handleAvatarUpload = async (event) => {
     event.preventDefault()
-
-    if (!avatarFile) {
-      return
-    }
-
+    if (!avatarFile) return
     setUploadState({ loading: true, error: '', success: '' })
-
     try {
       const payload = new FormData()
       payload.append('file', avatarFile)
-
-      await api.post('/uploads/avatar', payload, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      })
-
+      await api.post('/uploads/avatar', payload, { headers: { 'Content-Type': 'multipart/form-data' } })
       await refreshMe()
       setUploadState({ loading: false, error: '', success: 'Avatar berhasil diperbarui.' })
     } catch (error) {
-      setUploadState({
-        loading: false,
-        error: error?.response?.data?.message || 'Gagal upload avatar.',
-        success: '',
-      })
+      setUploadState({ loading: false, error: error?.response?.data?.message || 'Gagal upload avatar.', success: '' })
     }
   }
 
   const handleAccountSubmit = async (event) => {
     event.preventDefault()
     setAccountState({ loading: true, error: '', success: '' })
-
     try {
       await api.patch('/profile', accountForm)
       await refreshMe()
       setAccountState({ loading: false, error: '', success: 'Profil akun berhasil diperbarui.' })
     } catch (error) {
-      setAccountState({
-        loading: false,
-        error: error?.response?.data?.message || 'Gagal memperbarui akun.',
-        success: '',
-      })
+      setAccountState({ loading: false, error: error?.response?.data?.message || 'Gagal memperbarui akun.', success: '' })
     }
   }
 
   const handleRoleSubmit = async (event) => {
     event.preventDefault()
     setRoleState({ loading: true, error: '', success: '' })
-
     try {
       if (user.role === 'startup') {
         await api.post('/startup/profile', {
           ...roleForm,
-          needs: (roleForm.needs || '')
-            .split(',')
-            .map((item) => item.trim())
-            .filter(Boolean),
+          needs: (roleForm.needs || '').split(',').map((item) => item.trim()).filter(Boolean),
           team_size: Number(roleForm.team_size || 1),
           pitch_deck_url: roleForm.pitch_deck_url || null,
         })
       } else {
         await api.post('/talent/profile', {
           ...roleForm,
-          skills: (roleForm.skills || '')
-            .split(',')
-            .map((item) => item.trim())
-            .filter(Boolean),
-          preferred_industries: (roleForm.preferred_industries || '')
-            .split(',')
-            .map((item) => item.trim())
-            .filter(Boolean),
+          skills: (roleForm.skills || '').split(',').map((item) => item.trim()).filter(Boolean),
+          preferred_industries: (roleForm.preferred_industries || '').split(',').map((item) => item.trim()).filter(Boolean),
           experience_years: Number(roleForm.experience_years || 0),
           resume_url: roleForm.resume_url || null,
           portfolio_url: roleForm.portfolio_url || null,
         })
       }
-
       await refreshMe()
       setRoleState({ loading: false, error: '', success: 'Profil role berhasil diperbarui.' })
     } catch (error) {
-      setRoleState({
-        loading: false,
-        error: error?.response?.data?.message || 'Gagal memperbarui profil role.',
-        success: '',
-      })
+      setRoleState({ loading: false, error: error?.response?.data?.message || 'Gagal memperbarui profil role.', success: '' })
     }
   }
 
-  if (meQuery.isLoading) {
-    return <AppShell title="Profil">Memuat profil...</AppShell>
-  }
-
-  if (meQuery.isError) {
-    return <AppShell title="Profil">Gagal memuat profil.</AppShell>
-  }
+  if (meQuery.isLoading) return <AppShell title="Profil">Memuat profil...</AppShell>
+  if (meQuery.isError) return <AppShell title="Profil">Gagal memuat profil.</AppShell>
 
   return (
-    <AppShell title="Profil Saya">
-      <section className="grid gap-4 lg:grid-cols-2">
-        <article className="rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900">Informasi Akun</h2>
-          <p className="mt-1 text-sm text-slate-600">Role: {roleLabel}</p>
+    <>
+      <AppShell title="Profil Saya">
+        <div className="font-dm space-y-6">
 
-          <form className="mt-4 space-y-3" onSubmit={handleAccountSubmit}>
-            <label className="block text-sm font-medium text-slate-700">
-              Nama
-              <input
-                className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                value={accountForm.name}
-                onChange={(event) => setAccountForm((prev) => ({ ...prev, name: event.target.value }))}
-              />
-            </label>
+          {/* Page header */}
+          <div className="flex items-center gap-4">
+            <div>
+              <div className="flex items-center gap-2.5 mb-1">
+                <h1 style={{ fontFamily: "poppins" }} className="text-2xl font-semibold tracking-tight text-stone-900">Profil Saya</h1>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-yellow-300 bg-yellow-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-widest text-amber-800">
+                  <span className="animate-pulse-dot h-[5px] w-[5px] rounded-full bg-amber-500" />
+                  {roleLabel}
+                </span>
+              </div>
+              <p className="text-sm text-stone-400">Kelola informasi akun dan profil {roleLabel.toLowerCase()} kamu</p>
+            </div>
+          </div>
 
-            <label className="block text-sm font-medium text-slate-700">
-              Email
-              <input
-                className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                type="email"
-                value={accountForm.email}
-                onChange={(event) => setAccountForm((prev) => ({ ...prev, email: event.target.value }))}
-              />
-            </label>
+          {/* Main grid */}
+          <div className="grid gap-5 lg:grid-cols-2">
 
-            <button
-              type="submit"
-              disabled={accountState.loading}
-              className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-900"
-            >
-              {accountState.loading ? 'Menyimpan...' : 'Simpan Akun'}
-            </button>
+            {/* ── Left column: Account info ── */}
+            <div className="space-y-5">
 
-            {accountState.error && <p className="text-sm text-red-600">{accountState.error}</p>}
-            {accountState.success && <p className="text-sm text-green-600">{accountState.success}</p>}
-          </form>
+              {/* Account info card */}
+              <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_2px_4px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.06)]">
+                <div className="animate-shimmer h-[3px] w-full" />
+                <div className="p-6">
+                  {/* Card header */}
+                  <div className="mb-5 flex items-center gap-3">
+                    <div style={{ fontFamily: "inter" }}>
+                      <h2 className="font-syne text-base font-bold text-stone-900">Informasi Akun</h2>
+                      <p className="text-[12px] text-stone-400">Nama dan email akun kamu</p>
+                    </div>
+                  </div>
 
-          <form className="mt-6 space-y-3 border-t border-slate-200 pt-6" onSubmit={handleAvatarUpload}>
-            <label className="block text-sm font-medium text-slate-700">
-              Update Avatar
-              <input
-                className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                type="file"
-                accept="image/*"
-                onChange={(event) => setAvatarFile(event.target.files?.[0] || null)}
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={uploadState.loading}
-              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-            >
-              {uploadState.loading ? 'Uploading...' : 'Upload Avatar'}
-            </button>
-            {uploadState.error && <p className="text-sm text-red-600">{uploadState.error}</p>}
-            {uploadState.success && <p className="text-sm text-green-600">{uploadState.success}</p>}
-          </form>
-        </article>
+                  <form onSubmit={handleAccountSubmit} className="space-y-4">
+                    <div>
+                      <FieldLabel>Nama</FieldLabel>
+                      <Input
+                        placeholder="Nama lengkap kamu"
+                        value={accountForm.name}
+                        onChange={(e) => setAccountForm((p) => ({ ...p, name: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>Email</FieldLabel>
+                      <Input
+                        type="email"
+                        placeholder="email@kamu.com"
+                        value={accountForm.email}
+                        onChange={(e) => setAccountForm((p) => ({ ...p, email: e.target.value }))}
+                      />
+                    </div>
 
-        <article className="rounded-2xl bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-bold text-slate-900">Edit Profil {roleLabel}</h2>
-
-          <form className="mt-4 space-y-3" onSubmit={handleRoleSubmit}>
-            {user.role === 'startup' ? (
-              <>
-                <label className="block text-sm font-medium text-slate-700">
-                  Company Name
-                  <input
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                    value={roleForm.company_name || ''}
-                    onChange={(event) => setRoleForm((prev) => ({ ...prev, company_name: event.target.value }))}
-                  />
-                </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Tagline
-                  <input
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                    value={roleForm.tagline || ''}
-                    onChange={(event) => setRoleForm((prev) => ({ ...prev, tagline: event.target.value }))}
-                  />
-                </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Pitch Description
-                  <textarea
-                    className="mt-1 min-h-24 w-full rounded-xl border border-slate-300 px-4 py-2"
-                    value={roleForm.pitch_description || ''}
-                    onChange={(event) => setRoleForm((prev) => ({ ...prev, pitch_description: event.target.value }))}
-                  />
-                </label>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Stage
-                    <select
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                      value={roleForm.stage || 'idea'}
-                      onChange={(event) => setRoleForm((prev) => ({ ...prev, stage: event.target.value }))}
+                   <button
+                      type="submit"
+                      disabled={accountState.loading}
+                      className="flex cursor-pointer items-center gap-2.5 rounded-xl border-none bg-[#FED600] px-6 py-3 text-sm font-semibold tracking-wide text-stone-900 0.35)] transition-all hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <option value="idea">Idea</option>
-                      <option value="mvp">MVP</option>
-                      <option value="growth">Growth</option>
-                      <option value="scaling">Scaling</option>
-                    </select>
-                  </label>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Industry
-                    <input
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                      value={roleForm.industry || ''}
-                      onChange={(event) => setRoleForm((prev) => ({ ...prev, industry: event.target.value }))}
-                    />
-                  </label>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Location
-                    <input
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                      value={roleForm.location || ''}
-                      onChange={(event) => setRoleForm((prev) => ({ ...prev, location: event.target.value }))}
-                    />
-                  </label>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Team Size
-                    <input
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                      type="number"
-                      min={1}
-                      value={roleForm.team_size || 1}
-                      onChange={(event) => setRoleForm((prev) => ({ ...prev, team_size: event.target.value }))}
-                    />
-                  </label>
+                      {accountState.loading ? 'Menyimpan...' : 'Simpan Akun'}
+                    </button>
+                  </form>
                 </div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Needs (comma separated)
-                  <input
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                    value={roleForm.needs || ''}
-                    onChange={(event) => setRoleForm((prev) => ({ ...prev, needs: event.target.value }))}
-                  />
-                </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Website
-                  <input
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                    type="url"
-                    value={roleForm.website || ''}
-                    onChange={(event) => setRoleForm((prev) => ({ ...prev, website: event.target.value }))}
-                  />
-                </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Pitch Deck URL/Path
-                  <input
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                    value={roleForm.pitch_deck_url || ''}
-                    onChange={(event) => setRoleForm((prev) => ({ ...prev, pitch_deck_url: event.target.value }))}
-                  />
-                </label>
-              </>
-            ) : (
-              <>
-                <label className="block text-sm font-medium text-slate-700">
-                  Role Title
-                  <input
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                    value={roleForm.role_title || ''}
-                    onChange={(event) => setRoleForm((prev) => ({ ...prev, role_title: event.target.value }))}
-                  />
-                </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Bio
-                  <textarea
-                    className="mt-1 min-h-24 w-full rounded-xl border border-slate-300 px-4 py-2"
-                    value={roleForm.bio || ''}
-                    onChange={(event) => setRoleForm((prev) => ({ ...prev, bio: event.target.value }))}
-                  />
-                </label>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Experience (years)
-                    <input
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                      type="number"
-                      min={0}
-                      value={roleForm.experience_years || 0}
-                      onChange={(event) =>
-                        setRoleForm((prev) => ({ ...prev, experience_years: event.target.value }))
-                      }
-                    />
-                  </label>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Work Type
-                    <select
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                      value={roleForm.work_type || 'remote'}
-                      onChange={(event) => setRoleForm((prev) => ({ ...prev, work_type: event.target.value }))}
-                    >
-                      <option value="remote">Remote</option>
-                      <option value="onsite">On-site</option>
-                      <option value="hybrid">Hybrid</option>
-                    </select>
-                  </label>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Availability
-                    <select
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                      value={roleForm.availability || 'immediately'}
-                      onChange={(event) => setRoleForm((prev) => ({ ...prev, availability: event.target.value }))}
-                    >
-                      <option value="immediately">Immediately</option>
-                      <option value="1month">1 Month</option>
-                      <option value="3months">3 Months</option>
-                    </select>
-                  </label>
-                  <label className="block text-sm font-medium text-slate-700">
-                    Portfolio URL
-                    <input
-                      className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                      type="url"
-                      value={roleForm.portfolio_url || ''}
-                      onChange={(event) => setRoleForm((prev) => ({ ...prev, portfolio_url: event.target.value }))}
-                    />
-                  </label>
+              </div>
+
+              {/* Avatar card */}
+              <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_2px_4px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.06)]">
+                <div className="p-6">
+                  <div className="mb-5 flex items-center gap-3">
+                    <div style={{ fontFamily: "inter" }}>
+                      <h2 className="font-syne text-base font-bold text-stone-900">Foto Profil</h2>
+                      <p className="text-[12px] text-stone-400">Upload foto profil kamu</p>
+                    </div>
+                  </div>
+
+                  {/* Avatar preview area */}
+                  {user?.avatar_url && (
+                    <div className="mb-4 flex items-center gap-3">
+                      <img
+                        src={user.avatar_url}
+                        alt="Avatar"
+                        className="h-14 w-14 rounded-2xl border-2 border-amber-200 object-cover"
+                      />
+                      <div>
+                        <p className="text-[13px] font-medium text-stone-700">{user.name}</p>
+                        <p className="text-[12px] text-stone-400">Foto saat ini</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleAvatarUpload} className="space-y-4">
+                    {/* Upload zone */}
+                    <label className="relative block cursor-pointer overflow-hidden rounded-[14px] border-2 border-dashed border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 px-5 py-6 text-center transition-all hover:border-amber-400 hover:from-amber-100 hover:shadow-[0_4px_16px_rgba(251,191,36,0.12)]">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                        onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
+                      />
+                      <p style={{ fontFamily: "poppins" }} className="font-syne text-[13px] font-semibold text-stone-700">
+                        {avatarFile ? avatarFile.name : 'Klik untuk pilih foto'}
+                      </p>
+                      <p className="text-[12px] text-stone-400">PNG, JPG, WEBP · Maks 5MB</p>
+                    </label>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <StatusMsg error={uploadState.error} success={uploadState.success} />
+                      <div className="ml-auto">
+                        <button
+                          style={{ fontFamily: "inter" }}
+                          type="submit"
+                          disabled={uploadState.loading || !avatarFile}
+                          className="flex items-center gap-2 rounded-xl border-[1.5px] border-stone-200 bg-stone-900 px-5 cursor-pointer py-2.5 text-sm font-semibold text-white transition-all hover:bg-stone-800 hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:translate-y-0"
+                        >
+                          {uploadState.loading ? 'Uploading...' : 'Upload Foto'}
+                          {!uploadState.loading}
+                        </button>
+                      </div>
+                    </div>
+                  </form>
                 </div>
-                <label className="block text-sm font-medium text-slate-700">
-                  Skills (comma separated)
-                  <input
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                    value={roleForm.skills || ''}
-                    onChange={(event) => setRoleForm((prev) => ({ ...prev, skills: event.target.value }))}
-                  />
-                </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Preferred Industries (comma separated)
-                  <input
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                    value={roleForm.preferred_industries || ''}
-                    onChange={(event) =>
-                      setRoleForm((prev) => ({ ...prev, preferred_industries: event.target.value }))
-                    }
-                  />
-                </label>
-                <label className="block text-sm font-medium text-slate-700">
-                  Resume URL/Path
-                  <input
-                    className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-2"
-                    value={roleForm.resume_url || ''}
-                    onChange={(event) => setRoleForm((prev) => ({ ...prev, resume_url: event.target.value }))}
-                  />
-                </label>
-              </>
-            )}
+              </div>
+            </div>
 
-            <button
-              type="submit"
-              disabled={roleState.loading}
-              className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-900"
-            >
-              {roleState.loading ? 'Menyimpan...' : 'Simpan Profil Role'}
-            </button>
+            {/* ── Right column: Role profile ── */}
+            <div className="overflow-hidden rounded-2xl border border-black/[0.06] bg-white shadow-[0_2px_4px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.06)]">
+              <div className="animate-shimmer h-[3px] w-full" />
+              <div className="p-6">
+                {/* Card header */}
+                <div style={{ fontFamily: "inter" }} className="mb-5 flex items-center gap-3">
+                  
+                  <div>
+                    <h2 className="text-base font-bold text-stone-900">Edit Profil {roleLabel}</h2>
+                    <p className="text-[12px] text-stone-400">
+                      {user?.role === 'startup' ? 'Detail startup kamu' : 'Detail profil talent kamu'}
+                    </p>
+                  </div>
+                </div>
 
-            {roleState.error && <p className="text-sm text-red-600">{roleState.error}</p>}
-            {roleState.success && <p className="text-sm text-green-600">{roleState.success}</p>}
-          </form>
-        </article>
-      </section>
-    </AppShell>
+                <form onSubmit={handleRoleSubmit} className="space-y-4">
+
+                  {/* ── STARTUP fields ── */}
+                  {user.role === 'startup' && (
+                    <>
+                      <div>
+                        <FieldLabel>Company Name</FieldLabel>
+                        <Input placeholder="Nama perusahaan"
+                          value={roleForm.company_name || ''}
+                          onChange={(e) => setRoleForm((p) => ({ ...p, company_name: e.target.value }))} />
+                      </div>
+                      <div>
+                        <FieldLabel>Tagline</FieldLabel>
+                        <Input placeholder="One-liner startup kamu"
+                          value={roleForm.tagline || ''}
+                          onChange={(e) => setRoleForm((p) => ({ ...p, tagline: e.target.value }))} />
+                      </div>
+                      <div>
+                        <FieldLabel>Pitch Description</FieldLabel>
+                        <Textarea placeholder="Deskripsikan startup kamu..."
+                          value={roleForm.pitch_description || ''}
+                          onChange={(e) => setRoleForm((p) => ({ ...p, pitch_description: e.target.value }))} />
+                      </div>
+
+                      {/* Stage selector */}
+                      <div>
+                        <FieldLabel>Stage</FieldLabel>
+                        <div className="grid grid-cols-4 gap-2">
+                          {stageOptions.map((opt) => (
+                            <button key={opt.value} type="button"
+                              onClick={() => setRoleForm((p) => ({ ...p, stage: opt.value }))}
+                              className={`rounded-xl border-[1.5px] px-1.5 py-2.5 text-center transition-all ${
+                                roleForm.stage === opt.value
+                                  ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-amber-100 shadow-[0_4px_16px_rgba(251,191,36,0.2)]'
+                                  : 'border-stone-200 bg-[#fafaf8] hover:border-amber-400 hover:bg-amber-50 hover:-translate-y-px'
+                              }`}>
+                              <span className="block text-base mb-1">{opt.icon}</span>
+                              <span className={`font-syne block text-[11px] font-bold ${roleForm.stage === opt.value ? 'text-amber-800' : 'text-stone-400'}`}>{opt.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <SectionTitle>Detail Perusahaan</SectionTitle>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <FieldLabel>Industry</FieldLabel>
+                          <Input placeholder="e.g. EdTech"
+                            value={roleForm.industry || ''}
+                            onChange={(e) => setRoleForm((p) => ({ ...p, industry: e.target.value }))} />
+                        </div>
+                        <div>
+                          <FieldLabel>Location</FieldLabel>
+                          <Input placeholder="e.g. Jakarta"
+                            value={roleForm.location || ''}
+                            onChange={(e) => setRoleForm((p) => ({ ...p, location: e.target.value }))} />
+                        </div>
+                        <div>
+                          <FieldLabel>Team Size</FieldLabel>
+                          <Input type="number" min={1} placeholder="1"
+                            value={roleForm.team_size || 1}
+                            onChange={(e) => setRoleForm((p) => ({ ...p, team_size: e.target.value }))} />
+                        </div>
+                        <div>
+                          <FieldLabel>Website</FieldLabel>
+                          <Input type="url" placeholder="https://"
+                            value={roleForm.website || ''}
+                            onChange={(e) => setRoleForm((p) => ({ ...p, website: e.target.value }))} />
+                        </div>
+                        <div className="col-span-2">
+                          <FieldLabel>Needs (pisahkan koma)</FieldLabel>
+                          <Input placeholder="e.g. CTO, Designer"
+                            value={roleForm.needs || ''}
+                            onChange={(e) => setRoleForm((p) => ({ ...p, needs: e.target.value }))} />
+                        </div>
+                        <div className="col-span-2">
+                          <FieldLabel>Pitch Deck URL / Path</FieldLabel>
+                          <Input placeholder="https:// atau path file"
+                            value={roleForm.pitch_deck_url || ''}
+                            onChange={(e) => setRoleForm((p) => ({ ...p, pitch_deck_url: e.target.value }))} />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── TALENT fields ── */}
+                  {user.role === 'talent' && (
+                    <>
+                      <div>
+                        <FieldLabel>Role Title</FieldLabel>
+                        <Input placeholder="e.g. Full-stack Developer"
+                          value={roleForm.role_title || ''}
+                          onChange={(e) => setRoleForm((p) => ({ ...p, role_title: e.target.value }))} />
+                      </div>
+                      <div>
+                        <FieldLabel>Bio</FieldLabel>
+                        <Textarea placeholder="Ceritakan tentang dirimu..."
+                          value={roleForm.bio || ''}
+                          onChange={(e) => setRoleForm((p) => ({ ...p, bio: e.target.value }))} />
+                      </div>
+                      <div>
+                        <FieldLabel>Skills (pisahkan koma)</FieldLabel>
+                        <Input placeholder="e.g. React, Node.js, Figma"
+                          value={roleForm.skills || ''}
+                          onChange={(e) => setRoleForm((p) => ({ ...p, skills: e.target.value }))} />
+                      </div>
+
+                      {/* Work type selector */}
+                      <div>
+                        <FieldLabel>Work Type</FieldLabel>
+                        <div className="grid grid-cols-3 gap-2">
+                          {workTypeOptions.map((opt) => (
+                            <button key={opt.value} type="button"
+                              onClick={() => setRoleForm((p) => ({ ...p, work_type: opt.value }))}
+                              className={`rounded-xl border-[1.5px] px-2 py-2.5 text-center transition-all ${
+                                roleForm.work_type === opt.value
+                                  ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-amber-100 shadow-[0_4px_16px_rgba(251,191,36,0.2)]'
+                                  : 'border-stone-200 bg-[#fafaf8] hover:border-amber-400 hover:bg-amber-50 hover:-translate-y-px'
+                              }`}>
+                              <span className="block text-base mb-1">{opt.icon}</span>
+                              <span className={`font-syne block text-[11px] font-bold ${roleForm.work_type === opt.value ? 'text-amber-800' : 'text-stone-400'}`}>{opt.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Availability selector */}
+                      <div>
+                        <FieldLabel>Availability</FieldLabel>
+                        <div className="grid grid-cols-3 gap-2">
+                          {availabilityOptions.map((opt) => (
+                            <button key={opt.value} type="button"
+                              onClick={() => setRoleForm((p) => ({ ...p, availability: opt.value }))}
+                              className={`rounded-xl border-[1.5px] px-2 py-2.5 text-center transition-all ${
+                                roleForm.availability === opt.value
+                                  ? 'border-amber-500 bg-gradient-to-br from-amber-50 to-amber-100 shadow-[0_4px_16px_rgba(251,191,36,0.2)]'
+                                  : 'border-stone-200 bg-[#fafaf8] hover:border-amber-400 hover:bg-amber-50 hover:-translate-y-px'
+                              }`}>
+                              <span className="block text-base mb-1">{opt.icon}</span>
+                              <span className={`font-syne block text-[11px] font-bold ${roleForm.availability === opt.value ? 'text-amber-800' : 'text-stone-400'}`}>{opt.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <SectionTitle>Detail Tambahan</SectionTitle>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <FieldLabel>Pengalaman (tahun)</FieldLabel>
+                          <Input type="number" min={0} placeholder="0"
+                            value={roleForm.experience_years || 0}
+                            onChange={(e) => setRoleForm((p) => ({ ...p, experience_years: e.target.value }))} />
+                        </div>
+                        <div>
+                          <FieldLabel>Preferred Industries</FieldLabel>
+                          <Input placeholder="e.g. EdTech, FinTech"
+                            value={roleForm.preferred_industries || ''}
+                            onChange={(e) => setRoleForm((p) => ({ ...p, preferred_industries: e.target.value }))} />
+                        </div>
+                        <div className="col-span-2">
+                          <FieldLabel>Portfolio URL</FieldLabel>
+                          <Input type="url" placeholder="https://yourportfolio.com"
+                            value={roleForm.portfolio_url || ''}
+                            onChange={(e) => setRoleForm((p) => ({ ...p, portfolio_url: e.target.value }))} />
+                        </div>
+                        <div className="col-span-2">
+                          <FieldLabel>Resume URL / Path</FieldLabel>
+                          <Input placeholder="https:// atau path file"
+                            value={roleForm.resume_url || ''}
+                            onChange={(e) => setRoleForm((p) => ({ ...p, resume_url: e.target.value }))} />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between gap-3 border-t border-stone-100 pt-4">
+                    <StatusMsg error={roleState.error} success={roleState.success} />
+                    <div className="ml-auto">
+                      <button
+                        type="submit"
+                        disabled={roleState.loading}
+                        className="flex items-center gap-2.5 cursor-pointer rounded-xl border-none bg-[#FED600] px-6 py-3 text-sm font-semibold tracking-wide text-stone-900 transition-all hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {roleState.loading ? 'Menyimpan...' : 'Simpan Profil'}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </AppShell>
+    </>
   )
 }

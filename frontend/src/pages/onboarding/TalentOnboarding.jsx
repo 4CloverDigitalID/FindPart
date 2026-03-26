@@ -419,7 +419,7 @@ export default function TalentOnboarding() {
                       disabled={loading}
                       className="flex items-center gap-2.5 cursor-pointer rounded-xl border-none bg-amber-400 px-6 py-3 text-sm font-bold tracking-wide text-stone-900 shadow-[0_4px_16px_rgba(251,191,36,0.35),0_1px_3px_rgba(0,0,0,0.1)] transition-all hover:bg-amber-500 hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(251,191,36,0.45)] disabled:cursor-not-allowed disabled:opacity-60 disabled:translate-y-0"
                     >
-                      {loading ? 'Menyimpan...' : 'Simpan & Masuk Dashboard'}
+                      {loading ? 'Menyimpan...' : 'Simpan & Masuk'}
                     </button>
                   )}
                 </div>

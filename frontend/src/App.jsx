@@ -11,6 +11,7 @@ import StartupOnboarding from './pages/onboarding/StartupOnboarding'
 import TalentOnboarding from './pages/onboarding/TalentOnboarding'
 import SelectRole from './pages/onboarding/SelectRole'
 import LandingPages from './pages/LandingPages'
+import MainLayout from './layouts/MainLayout'
 
 function App() {
   return (
@@ -22,13 +23,15 @@ function App() {
         <Route path="/onboarding/role" element={<SelectRole />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/onboarding/startup" element={<StartupOnboarding />} />
           <Route path="/onboarding/talent" element={<TalentOnboarding />} />
-          <Route path="/swipe" element={<SwipePage />} />
-          <Route path="/matches" element={<MatchesPage />} />
+          <Route element={<MainLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/swipe" element={<SwipePage />} />
+            <Route path="/matches" element={<MatchesPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
+          </Route>
           <Route path="/matches/:id/chat" element={<ChatPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

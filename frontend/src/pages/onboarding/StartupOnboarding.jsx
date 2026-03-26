@@ -52,50 +52,39 @@ export default function StartupOnboarding() {
   }
 
   const handleSubmit = async (event) => {
-    event.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      const uploadedPath = pitchDeckPath || (await uploadPitchDeck())
-      await api.post('/startup/profile', {
-        ...form,
-        needs: form.needs.split(',').map((item) => item.trim()).filter(Boolean),
-        team_size: Number(form.team_size),
-        pitch_deck_url: uploadedPath || null,
-      })
-      const { data } = await api.get('/me')
-      setUser(data)
-      navigate('/dashboard')
-    } catch (submitError) {
-      setError(submitError?.response?.data?.message || 'Gagal menyimpan onboarding startup.')
-    } finally {
-      setLoading(false)
-    }
+  event.preventDefault()
+
+  if (step === 1) {
+    setStep(2)
+    return
   }
+
+  setError('')
+  setLoading(true)
+
+  try {
+    const uploadedPath = pitchDeckPath || (await uploadPitchDeck())
+    await api.post('/startup/profile', {
+      ...form,
+      needs: form.needs.split(',').map((item) => item.trim()).filter(Boolean),
+      team_size: Number(form.team_size),
+      pitch_deck_url: uploadedPath || null,
+    })
+
+    const { data } = await api.get('/me')
+    setUser(data)
+    navigate('/dashboard')
+  } catch (submitError) {
+    setError(submitError?.response?.data?.message || 'Gagal menyimpan onboarding startup.')
+  } finally {
+    setLoading(false)
+  }
+}
 
   return (
     <>
       <style>{`
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        @keyframes floatA {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-18px) rotate(3deg); }
-        }
-        @keyframes floatB {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(12px); }
-        }
-        @keyframes floatC {
-          0%, 100% { transform: rotate(15deg) scale(1); }
-          50% { transform: rotate(25deg) scale(1.05); }
-        }
-        @keyframes pulse-dot {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
+        
         .animate-shimmer {
           background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 35%, #fde68a 60%, #fbbf24 80%, #f59e0b 100%);
           background-size: 200% 100%;
@@ -260,7 +249,7 @@ export default function StartupOnboarding() {
                     </div>
 
                     {/* Stage */}
-                    <div>
+                    <div className=''>
                       <label className="mb-1.5 block text-[11.5px] font-bold uppercase tracking-widest text-stone-500">Stage</label>
                       <div className="grid grid-cols-4 gap-2">
                         {stageOptions.map((opt) => (
@@ -405,8 +394,11 @@ export default function StartupOnboarding() {
                   {step < 2 ? (
                     <button
                       type="button"
-                      onClick={() => setStep(2)}
-                      className=" flex items-center gap-2.5 cursor-pointer rounded-xl border-none bg-amber-400 px-6 py-3 text-sm font-bold tracking-wide text-stone-900 shadow-[0_4px_16px_rgba(251,191,36,0.35),0_1px_3px_rgba(0,0,0,0.1)] transition-all hover:bg-amber-500 hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(251,191,36,0.45),0_2px_6px_rgba(0,0,0,0.1)]"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setStep(2)
+                      }}
+                      className=" flex items-center gap-2.5 cursor-pointer rounded-xl border-none bg-[#FED600] px-6 py-3 text-sm font-bold tracking-wide text-stone-900 shadow-[0_4px_16px_rgba(251,191,36,0.35),0_1px_3px_rgba(0,0,0,0.1)] transition-all hover:bg-amber-400 hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(251,191,36,0.45),0_2px_6px_rgba(0,0,0,0.1)]"
                     >
                       Lanjut
                     </button>
@@ -416,7 +408,7 @@ export default function StartupOnboarding() {
                       disabled={loading}
                       className=" flex items-center gap-2.5 rounded-xl border-none bg-amber-400 px-6 py-3 text-sm font-bold tracking-wide text-stone-900 shadow-[0_4px_16px_rgba(251,191,36,0.35),0_1px_3px_rgba(0,0,0,0.1)] transition-all hover:bg-amber-500 hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(251,191,36,0.45)] disabled:cursor-not-allowed disabled:opacity-60 disabled:translate-y-0 cursor-pointer"
                     >
-                      {loading ? 'Menyimpan...' : 'Simpan & Masuk Dashboard'}
+                      {loading ? 'Menyimpan...' : 'Simpan & Masuk'}
                       
                     </button>
                   )}
