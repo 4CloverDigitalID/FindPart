@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '../api/axios'
-import AppShell from '../components/frontend/AppShell'
 import { useAuthStore } from '../store/authStore'
 
 function getInitialRoleForm(user) {
@@ -213,19 +212,18 @@ export default function ProfilePage() {
     }
   }
 
-  if (meQuery.isLoading) return <AppShell title="Profil">Memuat profil...</AppShell>
-  if (meQuery.isError) return <AppShell title="Profil">Gagal memuat profil.</AppShell>
+ if (meQuery.isLoading) return <div className="p-6">Memuat profil...</div>
+if (meQuery.isError) return <div className="p-6">Gagal memuat profil.</div>
 
   return (
     <>
-      <AppShell title="Profil Saya">
-        <div className="font-dm space-y-6">
+        <div className=" p-6 max-w-7xl mx-auto">
 
           {/* Page header */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 mb-3">
             <div>
               <div className="flex items-center gap-2.5 mb-1">
-                <h1 style={{ fontFamily: "poppins" }} className="text-2xl font-semibold tracking-tight text-stone-900">Profil Saya</h1>
+                <h1 style={{ fontFamily: "poppins" }} className="text-2xl font-semibold tracking-tight text-stone-900">My Profile</h1>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-yellow-300 bg-yellow-100 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-widest text-amber-800">
                   <span className="animate-pulse-dot h-[5px] w-[5px] rounded-full bg-amber-500" />
                   {roleLabel}
@@ -553,7 +551,6 @@ export default function ProfilePage() {
 
           </div>
         </div>
-      </AppShell>
     </>
   )
 }

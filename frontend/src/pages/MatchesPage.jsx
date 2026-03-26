@@ -18,7 +18,7 @@ export default function MatchesPage() {
   const matches = matchesQuery.data?.data || []
 
   return (
-    <AppShell title="Daftar Matches">
+    <div className='p-6 max-w-7xl mx-auto'>
       <section className="grid gap-4">
         {matches.length === 0 && (
           <article className="rounded-2xl bg-white p-6 text-sm text-slate-600 shadow-sm">
@@ -50,6 +50,6 @@ export default function MatchesPage() {
           )
         })}
       </section>
-    </AppShell>
+    </div>
   )
 }

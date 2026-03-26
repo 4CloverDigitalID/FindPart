@@ -311,7 +311,7 @@ export default function Dashboard() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
               <div className="w-8 h-8 border-2 border-yellow-300 border-t-yellow-500 rounded-full animate-spin" />
             </div>
           ) : (
