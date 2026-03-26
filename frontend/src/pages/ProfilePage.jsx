@@ -164,7 +164,7 @@ export default function ProfilePage() {
     try {
       const payload = new FormData()
       payload.append('file', avatarFile)
-      await api.post('/uploads/avatar', payload, { headers: { 'Content-Type': 'multipart/form-data' } })
+      await api.post('/uploads/avatar', payload)
       await refreshMe()
       setUploadState({ loading: false, error: '', success: 'Avatar berhasil diperbarui.' })
     } catch (error) {

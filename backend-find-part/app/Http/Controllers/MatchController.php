@@ -18,7 +18,7 @@ class MatchController extends Controller
                 'startup.startupProfile',
                 'talent:id,name,avatar,role',
                 'talent.talentProfile',
-                'conversation',
+                'conversation.messages',
             ])
             ->orderByDesc('matched_at');
 

@@ -44,9 +44,7 @@ export default function StartupOnboarding() {
     if (!pitchDeckFile) return ''
     const payload = new FormData()
     payload.append('file', pitchDeckFile)
-    const { data } = await api.post('/uploads/pitch-deck', payload, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    const { data } = await api.post('/uploads/pitch-deck', payload)
     setPitchDeckPath(data.path)
     return data.path
   }

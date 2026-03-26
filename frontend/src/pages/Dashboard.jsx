@@ -9,6 +9,7 @@ import {
 import api from "../api/axios";
 import { useAuthStore } from "../store/authStore";
 import { useAuth } from "../hooks/useAuth";
+import { useReadReceiptsStore } from "../store/readReceiptsStore";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 const getAvatar = (user) => {
@@ -134,24 +135,40 @@ function MatchRow({ match, currentUser }) {
 }
 
 // ── Conversation Row ──────────────────────────────────────────────────────
-function ConvoRow({ convo }) {
+function ConvoRow({ convo, currentUser }) {
   const lastMsg = convo.messages?.[convo.messages.length - 1];
   const other = convo.participants?.find?.((p) => p.id !== convo.current_user_id) || null;
+
+  const { readTimestamps } = useReadReceiptsStore();
+  const lastRead = readTimestamps[convo.match_id];
+  
+  const isUnread = lastMsg 
+    && lastMsg.sender_id !== currentUser?.id
+    && (!lastRead || new Date(lastMsg.created_at) > new Date(lastRead));
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all cursor-pointer">
       <Avatar user={other || { name: "Chat" }} size={38} />
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-gray-800 truncate">
+        <div className="text-sm font-semibold text-gray-800 truncate flex items-center gap-2">
           {other?.name || `Conversation #${convo.id}`}
         </div>
         {lastMsg && (
-          <div className="text-xs text-gray-400 truncate">{lastMsg.message || lastMsg.content}</div>
+          <div className={`text-xs truncate ${isUnread ? 'text-gray-900 font-bold' : 'text-gray-400'}`}>
+            {lastMsg.message || lastMsg.body || lastMsg.content}
+          </div>
         )}
       </div>
-      {lastMsg && (
-        <span className="text-[10px] text-gray-300 shrink-0">{timeAgo(lastMsg.created_at)}</span>
-      )}
+      <div className="flex flex-col items-end gap-1.5 shrink-0">
+        {lastMsg && (
+          <span className={`text-[10px] ${isUnread ? 'text-yellow-600 font-bold tracking-wide' : 'text-gray-300'}`}>
+            {timeAgo(lastMsg.created_at)}
+          </span>
+        )}
+        {isUnread && (
+          <div className="w-2 h-2 bg-yellow-400 rounded-full shadow-sm" />
+        )}
+      </div>
     </div>
   );
 }
@@ -470,7 +487,7 @@ export default function Dashboard() {
                     ) : (
                       <div className="space-y-1">
                         {conversations.slice(0, 4).map((c, i) => (
-                          <ConvoRow key={c.id || i} convo={c} />
+                          <ConvoRow key={c.id || i} convo={c} currentUser={currentUser} />
                         ))}
                       </div>
                     )}

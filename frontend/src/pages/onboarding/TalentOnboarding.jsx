@@ -48,9 +48,7 @@ export default function TalentOnboarding() {
     if (!resumeFile) return ''
     const payload = new FormData()
     payload.append('file', resumeFile)
-    const { data } = await api.post('/uploads/resume', payload, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    const { data } = await api.post('/uploads/resume', payload)
     setResumePath(data.path)
     return data.path
   }
