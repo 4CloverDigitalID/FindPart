@@ -91,7 +91,7 @@ function FilterSelect({ value, onChange, options, placeholder }) {
 }
 
 // ── Action Button ─────────────────────────────────────────────────────────────
-function ActionBtn({ onClick, icon: Icon, label, variant }) {
+function ActionBtn({ onClick, icon: Icon, label, variant, disabled = false }) {
   const styles = {
     pass: 'bg-white border-2 border-red-200 text-red-400 hover:bg-red-50 hover:border-red-400 hover:scale-105',
     like: 'bg-yellow-400 border-2 border-yellow-400 text-black hover:bg-yellow-500 hover:scale-105',
@@ -101,7 +101,8 @@ function ActionBtn({ onClick, icon: Icon, label, variant }) {
     <button
       type="button"
       onClick={onClick}
-      className={`flex flex-col cursor-pointer items-center gap-1.5 px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-150 shadow-sm ${styles[variant]}`}
+      disabled={disabled}
+      className={`flex flex-col items-center gap-1.5 px-6 py-3 rounded-2xl font-bold text-sm transition-all duration-150 shadow-sm ${styles[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
     >
       <Icon size={variant === 'like' ? 22 : 18} />
       <span className="text-xs font-semibold">{label}</span>
@@ -197,22 +198,42 @@ export default function SwipePage() {
   }, [activeUser?.role])
 
   const handleSwipe = async (direction, swipedId) => {
-    if (!activeUser) return
+    if (!activeUser || swipeMutation.isPending || !swipedId) return
+
+    setCards((prev) => prev.filter((card) => card.id !== swipedId))
+
     setSessionStats((prev) => ({
       ...prev,
       likes: direction === 'right' ? prev.likes + 1 : prev.likes,
       passes: direction === 'left' ? prev.passes + 1 : prev.passes,
     }))
+
     try {
       const response = await swipeMutation.mutateAsync({ direction, swipedId })
-      setCards((prev) => prev.filter((card) => card.id !== swipedId))
       if (response.match && response.match_id) {
         const { data } = await api.get(`/matches/${response.match_id}`)
         const partner = activeUser.role === 'startup' ? data.talent : data.startup
         setLiveMatch({ id: response.match_id, name: partner?.name || 'pengguna baru' })
       }
+
+      // Keep queue filled from backend after each swipe.
+      const refreshed = await discoverQuery.refetch()
+      const incomingCards = refreshed.data?.data || []
+
+      setCards((prev) => {
+        if (prev.length >= 3) {
+          return prev
+        }
+
+        const seen = new Set(prev.map((card) => card.id))
+        const extras = incomingCards.filter((card) => !seen.has(card.id))
+        return [...prev, ...extras]
+      })
     } catch (error) {
       console.error(error)
+      // Revert from backend state when swipe request fails.
+      const refreshed = await discoverQuery.refetch()
+      setCards(refreshed.data?.data || [])
     }
   }
 
@@ -278,15 +299,17 @@ export default function SwipePage() {
 
             {/* Main Card */}
             <div className="relative z-[2] p-5 h-full" style={{ minHeight: 540 }}>
-              {discoverQuery.isLoading ? (
+              {discoverQuery.isLoading || (swipeMutation.isPending && !currentCard) ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3" style={{ minHeight: 460 }}>
                   <div className="w-10 h-10 border-2 border-yellow-300 border-t-yellow-500 rounded-full animate-spin" />
-                  <div className="text-sm text-gray-400">Mencari orang...</div>
+                  <div className="text-sm text-gray-400">
+                    {discoverQuery.isLoading ? 'Mencari orang...' : 'Menyiapkan kartu berikutnya...'}
+                  </div>
                 </div>
               ) : !currentCard ? (
                 <EmptyState onReset={handleReset} />
               ) : (
-                <SwipeCard card={currentCard} onSwipe={handleSwipe} />
+                <SwipeCard key={currentCard.id} card={currentCard} onSwipe={handleSwipe} disabled={swipeMutation.isPending} />
               )}
             </div>
           </div>
@@ -299,12 +322,14 @@ export default function SwipePage() {
                 icon={X}
                 label="Pass"
                 variant="pass"
+                disabled={swipeMutation.isPending}
               />
               <ActionBtn
                 onClick={() => handleSwipe('right', currentCard.id)}
                 icon={Heart}
                 label="Like"
                 variant="like"
+                disabled={swipeMutation.isPending}
               />
             </div>
           )}

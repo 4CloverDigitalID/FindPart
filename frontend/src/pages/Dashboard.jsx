@@ -36,6 +36,9 @@ const timeAgo = (dateStr) => {
   return `${Math.floor(h / 24)}d ago`;
 };
 
+const getStartupProfile = (user) => user?.startup_profile || user?.startupProfile || null;
+const getTalentProfile = (user) => user?.talent_profile || user?.talentProfile || null;
+
 // ── Avatar ──────────────────────────────────────────────────────────────────
 function Avatar({ user, size = 40, ring = false }) {
   const src = getAvatar(user);
@@ -95,7 +98,7 @@ function SectionHeader({ children, action }) {
 function MatchRow({ match, currentUser }) {
   const isStartup = currentUser?.role === "startup";
   const other = isStartup ? match.talent : match.startup;
-  const profile = isStartup ? match.talent?.talentProfile : match.startup?.startupProfile;
+  const profile = isStartup ? getTalentProfile(other) : getStartupProfile(other);
   const subtitle = profile?.role_title || profile?.tagline || profile?.company_name || "FindPart member";
   const tags = profile?.skills?.slice(0, 2) || profile?.needs?.slice(0, 2) || [];
 
@@ -176,8 +179,8 @@ function ConvoRow({ convo, currentUser }) {
 // ── Profile Completion ──────────────────────────────────────────────────────
 function ProfileStrength({ profile, role }) {
   const isStartup = role === "startup";
-  const sp = profile?.startupProfile;
-  const tp = profile?.talentProfile;
+  const sp = getStartupProfile(profile);
+  const tp = getTalentProfile(profile);
 
   const checks = isStartup
     ? [
@@ -192,7 +195,7 @@ function ProfileStrength({ profile, role }) {
         { label: "Bio", done: !!tp?.bio },
         { label: "Role title", done: !!tp?.role_title },
         { label: "Skills listed", done: tp?.skills?.length > 0 },
-        { label: "Experience", done: !!tp?.experience_years },
+        { label: "Experience", done: tp?.experience_years !== null && tp?.experience_years !== undefined },
         { label: "Availability", done: !!tp?.availability },
         { label: "Avatar", done: !!profile?.avatar },
       ];
@@ -256,6 +259,9 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const { logoutMutation } = useAuth();
+  const [showIntro, setShowIntro] = useState(
+    () => sessionStorage.getItem("showDashboardIntro") === "1"
+  );
 
   const [profile, setProfile] = useState(null);
   const [matches, setMatches] = useState([]);
@@ -266,6 +272,19 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => { fetchAll(); }, []);
+
+  useEffect(() => {
+    if (!showIntro) {
+      return;
+    }
+
+    const hideTimer = window.setTimeout(() => {
+      setShowIntro(false);
+      sessionStorage.removeItem("showDashboardIntro");
+    }, 1800);
+
+    return () => window.clearTimeout(hideTimer);
+  }, [showIntro]);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -299,6 +318,8 @@ export default function Dashboard() {
 
   const currentUser = profile || user;
   const isStartup = currentUser?.role === "startup";
+  const currentStartupProfile = getStartupProfile(currentUser);
+  const currentTalentProfile = getTalentProfile(currentUser);
 
   const filteredMatches = matches.filter((m) => {
     if (!search) return true;
@@ -326,6 +347,25 @@ export default function Dashboard() {
 
   return (
       <div className="flex-1 flex flex-col overflow-hidden">
+        {showIntro && (
+          <div className="fixed inset-0 z-[90] pointer-events-none">
+            <div className="absolute inset-0 dashboard-intro-backdrop" />
+            <div className="absolute inset-0 flex items-center justify-center px-6">
+              <div className="dashboard-intro-card">
+                <div className="inline-flex items-center gap-2 rounded-full bg-black/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-black/70">
+                  <Sparkles size={12} />
+                  Welcome Back
+                </div>
+                <h2 style={{ fontFamily: "inter" }} className="mt-4 text-4xl font-semibold text-black">
+                  Hey, {currentUser?.name?.split(" ")[0] || "there"}!
+                </h2>
+                <p className="mt-2 text-sm text-black/70">
+                  {isStartup ? "Let's find great talent today." : "Let's find your next opportunity today."}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         <main className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center min-h-[calc(100vh-64px)]">
@@ -404,8 +444,8 @@ export default function Dashboard() {
                   sub={conversations.length > 0 ? "Active chats" : "Chat your matches"}
                   iconBg="bg-blue-50" accent="text-blue-400" />
                 <StatCard icon={Target} label="Profile Status"
-                  value={currentUser?.startupProfile || currentUser?.talentProfile ? "Live" : "Setup"}
-                  sub={currentUser?.startupProfile || currentUser?.talentProfile ? "Visible to others" : "Complete profile"}
+                  value={currentStartupProfile || currentTalentProfile ? "Live" : "Setup"}
+                  sub={currentStartupProfile || currentTalentProfile ? "Visible to others" : "Complete profile"}
                   iconBg="bg-green-50" accent="text-green-500" />
                 <StatCard icon={TrendingUp} label="This Week"
                   value={matches.filter(m => m.matched_at && (Date.now() - new Date(m.matched_at)) < 7 * 86400000).length}
@@ -512,17 +552,17 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
-                    {isStartup && currentUser?.startupProfile && (
+                    {isStartup && currentStartupProfile && (
                       <div className="mt-3 pt-3 border-t border-amber-200/60">
-                        <div className="text-xs font-bold text-gray-600 mb-1">{currentUser.startupProfile.company_name}</div>
-                        <div className="text-xs text-gray-400 line-clamp-2">{currentUser.startupProfile.tagline}</div>
+                        <div className="text-xs font-bold text-gray-600 mb-1">{currentStartupProfile.company_name}</div>
+                        <div className="text-xs text-gray-400 line-clamp-2">{currentStartupProfile.tagline}</div>
                       </div>
                     )}
-                    {!isStartup && currentUser?.talentProfile && (
+                    {!isStartup && currentTalentProfile && (
                       <div className="mt-3 pt-3 border-t border-blue-100">
-                        <div className="text-xs font-bold text-gray-600 mb-1">{currentUser.talentProfile.role_title}</div>
+                        <div className="text-xs font-bold text-gray-600 mb-1">{currentTalentProfile.role_title}</div>
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {currentUser.talentProfile.skills?.slice(0, 3).map((s, i) => (
+                          {currentTalentProfile.skills?.slice(0, 3).map((s, i) => (
                             <span key={i} className="text-[10px] bg-blue-100 text-blue-500 px-2 py-0.5 rounded-full">{s}</span>
                           ))}
                         </div>

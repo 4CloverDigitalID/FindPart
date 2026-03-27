@@ -1,1 +1,49 @@
 @import "tailwindcss";
+
+@keyframes dashboardIntroFade {
+  0% {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+}
+
+@keyframes dashboardIntroCard {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+}
+
+.dashboard-intro-backdrop {
+  background: radial-gradient(circle at 20% 20%, rgba(253, 224, 71, 0.92), rgba(251, 191, 36, 0.85) 40%, rgba(255, 255, 255, 0.9) 100%);
+  animation: dashboardIntroFade 1.8s ease forwards;
+}
+
+.dashboard-intro-card {
+  text-align: center;
+  animation: dashboardIntroCard 1.8s ease forwards;
+}

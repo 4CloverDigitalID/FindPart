@@ -68,7 +68,7 @@ function SkillTag({ label }) {
 // ══════════════════════════════════════════════════════════════════════════════
 // SWIPE CARD
 // ══════════════════════════════════════════════════════════════════════════════
-export default function SwipeCard({ card, onSwipe }) {
+export default function SwipeCard({ card, onSwipe, disabled = false }) {
   const [expanded, setExpanded] = useState(false)
 
   const x = useMotionValue(0)
@@ -114,13 +114,14 @@ export default function SwipeCard({ card, onSwipe }) {
 
   return (
     <motion.div
+      key={card.id}
       style={{ x, rotate }}
-      drag="x"
+      drag={disabled ? false : "x"}
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.15}
       onDragEnd={handleDragEnd}
       whileDrag={{ cursor: 'grabbing' }}
-      className="absolute top-0 left-0 right-0 mx-auto w-full max-w-sm cursor-grab select-none"
+      className={`absolute top-0 left-0 right-0 mx-auto w-full max-w-sm select-none ${disabled ? 'cursor-not-allowed opacity-90' : 'cursor-grab'}`}
     >
       {/* ── Card Shell ── */}
       <div className="relative bg-white rounded-3xl overflow-hidden shadow-xl border border-gray-100"

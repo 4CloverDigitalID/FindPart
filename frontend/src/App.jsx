@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import GuestRoute from './components/frontend/GuestRoute'
 import ProtectedRoute from './components/frontend/ProtectedRoute'
 import ChatPage from './pages/ChatPage'
 import Dashboard from './pages/Dashboard'
@@ -18,8 +19,10 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPages />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route element={<GuestRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
         <Route path="/onboarding/role" element={<SelectRole />} />
 
         <Route element={<ProtectedRoute />}>

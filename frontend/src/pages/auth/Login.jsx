@@ -36,7 +36,13 @@ export default function Login() {
 
   useEffect(() => {
     if (loginMutation.data?.user) {
-      navigate(location.state?.from?.pathname || getNextPath(loginMutation.data.user), { replace: true })
+      const destination = location.state?.from?.pathname || getNextPath(loginMutation.data.user)
+
+      if (destination === '/dashboard') {
+        sessionStorage.setItem('showDashboardIntro', '1')
+      }
+
+      navigate(destination, { replace: true })
     }
   }, [loginMutation.data, location.state, navigate])
 
