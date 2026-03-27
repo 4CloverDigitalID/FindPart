@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useMatches } from '../hooks/useMatches'
 import { useAuthStore } from '../store/authStore'
-import { useReadReceiptsStore } from '../store/readReceiptsStore'
 import { MessageCircle, Zap, Users, ChevronRight, Clock, Flame } from 'lucide-react'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -74,7 +73,7 @@ function SkillTag({ label }) {
 }
 
 // ── Match Card ────────────────────────────────────────────────────────────────
-function MatchCard({ match, user, readTimestamps }) {
+function MatchCard({ match, user }) {
   const partner = user?.role === 'startup' ? match.talent : match.startup
   const profile = partner?.startup_profile || partner?.talent_profile
   const isStartup = !!partner?.startup_profile
@@ -86,11 +85,10 @@ function MatchCard({ match, user, readTimestamps }) {
   const conversation = match.conversation
   const messages = conversation?.messages || []
   const lastMsg = messages[messages.length - 1]
-  const lastRead = readTimestamps[match.id]
   const isUnread =
     lastMsg &&
     lastMsg.sender_id !== user?.id &&
-    (!lastRead || new Date(lastMsg.created_at) > new Date(lastRead))
+    !lastMsg.read_at
 
   const matchedAt = match.matched_at || match.created_at
 
@@ -140,7 +138,7 @@ function MatchCard({ match, user, readTimestamps }) {
                 {lastMsg.sender_id === user?.id ? (
                   <span className="text-gray-300 mr-1">Kamu:</span>
                 ) : null}
-                {lastMsg.message || lastMsg.content || '—'}
+                {lastMsg.body || lastMsg.message || lastMsg.content || '—'}
               </div>
             ) : (
               <div className="text-xs mt-2 text-gray-300 italic">Belum ada pesan. Mulai duluan!</div>
@@ -211,7 +209,6 @@ function EmptyState() {
 export default function MatchesPage() {
   const user = useAuthStore((state) => state.user)
   const matchesQuery = useMatches()
-  const { readTimestamps } = useReadReceiptsStore()
 
   if (matchesQuery.isLoading) {
     return (
@@ -233,8 +230,7 @@ export default function MatchesPage() {
   const unreadCount = matches.filter((m) => {
     const msgs = m.conversation?.messages || []
     const last = msgs[msgs.length - 1]
-    const lastRead = readTimestamps[m.id]
-    return last && last.sender_id !== user?.id && (!lastRead || new Date(last.created_at) > new Date(lastRead))
+    return last && last.sender_id !== user?.id && !last.read_at
   }).length
 
   return (
@@ -285,8 +281,8 @@ export default function MatchesPage() {
             .sort((a, b) => {
               const aLast = (a.conversation?.messages || []).slice(-1)[0]
               const bLast = (b.conversation?.messages || []).slice(-1)[0]
-              const aUnread = aLast && aLast.sender_id !== user?.id && (!readTimestamps[a.id] || new Date(aLast.created_at) > new Date(readTimestamps[a.id]))
-              const bUnread = bLast && bLast.sender_id !== user?.id && (!readTimestamps[b.id] || new Date(bLast.created_at) > new Date(readTimestamps[b.id]))
+              const aUnread = aLast && aLast.sender_id !== user?.id && !aLast.read_at
+              const bUnread = bLast && bLast.sender_id !== user?.id && !bLast.read_at
               if (aUnread && !bUnread) return -1
               if (!aUnread && bUnread) return 1
               return new Date(b.matched_at || b.created_at) - new Date(a.matched_at || a.created_at)
@@ -296,7 +292,6 @@ export default function MatchesPage() {
                 key={match.id}
                 match={match}
                 user={user}
-                readTimestamps={readTimestamps}
               />
             ))}
         </div>

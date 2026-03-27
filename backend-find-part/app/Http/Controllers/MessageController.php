@@ -43,6 +43,9 @@ class MessageController extends Controller
 
         broadcast(new MessageSent($message))->toOthers();
 
-        return response()->json($message, 201);
+        $response = $message->toArray();
+        $response['match_id'] = $match->id;
+
+        return response()->json($response, 201);
     }
 }

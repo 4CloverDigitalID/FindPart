@@ -31,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/matches/{id}', [MatchController::class, 'show']);
 
     Route::get('/conversations/{matchId}', [ConversationController::class, 'show']);
+    Route::post('/conversations/{matchId}/read', [ConversationController::class, 'markRead']);
     Route::post('/messages', [MessageController::class, 'store']);
 
     Route::post('/uploads/avatar', [UploadController::class, 'avatar']);

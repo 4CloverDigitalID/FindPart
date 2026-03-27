@@ -5,7 +5,6 @@ import api from '../api/axios'
 import ChatBubble from '../components/frontend/ChatBubble'
 import { useChat } from '../hooks/useChat'
 import { useAuthStore } from '../store/authStore'
-import { useReadReceiptsStore } from '../store/readReceiptsStore'
 
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
@@ -20,7 +19,16 @@ export default function ChatPage() {
   const user = useAuthStore((state) => state.user)
   const [body, setBody] = useState('')
   const messagesEndRef = useRef(null)
-  const markAsRead = useReadReceiptsStore((state) => state.markAsRead)
+
+  const {
+    messages,
+    sendMessageMutation,
+    sendTyping,
+    onlineUserIds,
+    typingUserId,
+    connectionState,
+    connectionError,
+  } = useChat(matchId)
 
   const matchQuery = useQuery({
     queryKey: ['match', matchId],
@@ -29,21 +37,16 @@ export default function ChatPage() {
       const { data } = await api.get(`/matches/${matchId}`)
       return data
     },
+    staleTime: 10000,
+    refetchOnWindowFocus: false,
+    refetchInterval: connectionState === 'connected' ? false : 5000,
+    refetchIntervalInBackground: true,
   })
-
-  const { messages, sendMessageMutation, conversationQuery } = useChat(matchId)
 
   // Auto-scroll to bottom whenever messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-
-  // Mark messages as read whenever the page updates with new data
-  useEffect(() => {
-    if (messages.length > 0) {
-      markAsRead(matchId)
-    }
-  }, [messages.length, matchId, markAsRead])
 
   const handleSend = async (event) => {
     event.preventDefault()
@@ -52,20 +55,26 @@ export default function ChatPage() {
     }
 
     try {
-      // Capture the message so we can clear the input instantly
       const sentBody = body.trim()
-      setBody('') // Instantly clear the input field
-      
+      setBody('')
       await sendMessageMutation.mutateAsync(sentBody)
-      
-      // Force absolutely aggressive reload of the query directly from the view
-      if (conversationQuery) await conversationQuery.refetch()
     } catch (e) {
       console.error(e)
     }
   }
 
   const partner = user?.role === 'startup' ? matchQuery.data?.talent : matchQuery.data?.startup
+  const partnerProfile = partner?.startup_profile || partner?.talent_profile
+  const isPartnerOnline = Boolean(partner?.id && onlineUserIds.includes(partner.id))
+  const isPartnerTyping = Boolean(partner?.id && typingUserId === partner.id)
+  const isRealtimeConnecting = ['initialized', 'connecting'].includes(connectionState)
+  const partnerStatus = isPartnerTyping
+    ? 'Sedang mengetik...'
+    : isPartnerOnline
+    ? 'Online'
+    : isRealtimeConnecting
+    ? 'Menyambungkan...'
+    : 'Offline'
 
   return (
     <div className="w-full h-[calc(100vh-4rem)] p-4 md:p-6 lg:p-8 flex items-center justify-center overflow-hidden bg-slate-50/50">
@@ -79,14 +88,24 @@ export default function ChatPage() {
                 <div className="w-10 h-10 rounded-full bg-[#dbd8d8] flex items-center justify-center text-[#5f5e5e] font-bold text-[14px]">
                   {partner?.name ? partner.name.substring(0,2).toUpperCase() : 'U'}
                 </div>
-                <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-[#52c41a] border-2 border-white rounded-full"></div>
+                <div
+                  className={`absolute bottom-0 right-0 w-2.5 h-2.5 border-2 border-white rounded-full ${
+                    isPartnerTyping
+                      ? 'bg-yellow-400'
+                      : isPartnerOnline
+                      ? 'bg-[#52c41a]'
+                      : 'bg-gray-300'
+                  }`}
+                />
               </div>
               <div>
                 <h2 style={{ fontFamily: "poppins" }} className="text-[16px] md:text-[18px] font-extrabold text-[#1a1c1c] leading-tight">
                   {partner?.name || 'Loading...'}
                 </h2>
                 <p style={{ fontFamily: "inter" }} className="text-[9px] md:text-[10px] font-bold text-[#5f5e5e]/50 uppercase tracking-widest mt-0.5">
-                  {partner?.role_title ? `${partner.role_title} • Active` : 'Online'}
+                  {partnerProfile?.role_title || partnerProfile?.tagline
+                    ? `${partnerProfile.role_title || partnerProfile.tagline} • ${partnerStatus}`
+                    : partnerStatus}
                 </p>
               </div>
             </div>
@@ -94,6 +113,25 @@ export default function ChatPage() {
           
           <div className="hidden md:flex items-center gap-8 md:mr-4 lg:mr-8">
             <span style={{ fontFamily: "inter" }} className="text-[#1a1c1c] border-b-2 border-[#fdd400] pb-1 font-bold text-[13px] tracking-wide">Direct</span>
+            <div className="flex flex-col items-end">
+              <span
+                style={{ fontFamily: "inter" }}
+                className={`text-[10px] font-bold uppercase tracking-wider ${
+                  connectionState === 'connected' ? 'text-emerald-600' : 'text-amber-600'
+                }`}
+              >
+                WS: {connectionState}
+              </span>
+              {connectionError ? (
+                <span
+                  style={{ fontFamily: "inter" }}
+                  className="max-w-[200px] truncate text-[10px] text-red-500"
+                  title={connectionError}
+                >
+                  {connectionError}
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex items-center gap-1.5 md:gap-3">
@@ -134,7 +172,12 @@ export default function ChatPage() {
               className="flex-1 w-full border-none focus:ring-0 text-[14px] md:text-[14.5px] bg-transparent placeholder:text-[#5f5e5e]/40 py-2 outline-none text-[#1a1c1c]"
               placeholder="Tulis pesan..."
               value={body}
-              onChange={(event) => setBody(event.target.value)}
+              onChange={(event) => {
+                setBody(event.target.value)
+                if (event.target.value.trim()) {
+                  sendTyping()
+                }
+              }}
             />
             <div className="flex items-center gap-1 md:gap-2 pr-1">
               <button type="button" className="p-2 text-[#5f5e5e]/50 hover:text-[#5f5e5e] transition-colors rounded-full hover:bg-black/5">

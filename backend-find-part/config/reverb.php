@@ -1,5 +1,14 @@
 <?php
 
+$allowedOrigins = array_values(array_filter(array_map(
+    static fn (string $origin): string => trim($origin),
+    explode(',', (string) env('REVERB_ALLOWED_ORIGINS', env('FRONTEND_URL', 'http://localhost:5173')))
+)));
+
+if ($allowedOrigins === []) {
+    $allowedOrigins = ['http://localhost:5173'];
+}
+
 return [
     'default' => env('REVERB_SERVER', 'reverb'),
 
@@ -39,7 +48,7 @@ return [
                     'scheme' => env('REVERB_SCHEME', 'http'),
                     'useTLS' => env('REVERB_SCHEME', 'http') === 'https',
                 ],
-                'allowed_origins' => [env('FRONTEND_URL', 'http://localhost:5173')],
+                'allowed_origins' => $allowedOrigins,
                 'ping_interval' => env('REVERB_APP_PING_INTERVAL', 60),
                 'activity_timeout' => env('REVERB_APP_ACTIVITY_TIMEOUT', 30),
                 'max_message_size' => env('REVERB_APP_MAX_MESSAGE_SIZE', 10_000),

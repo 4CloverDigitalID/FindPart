@@ -9,7 +9,6 @@ import {
 import api from "../api/axios";
 import { useAuthStore } from "../store/authStore";
 import { useAuth } from "../hooks/useAuth";
-import { useReadReceiptsStore } from "../store/readReceiptsStore";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 const getAvatar = (user) => {
@@ -141,13 +140,10 @@ function MatchRow({ match, currentUser }) {
 function ConvoRow({ convo, currentUser }) {
   const lastMsg = convo.messages?.[convo.messages.length - 1];
   const other = convo.participants?.find?.((p) => p.id !== convo.current_user_id) || null;
-
-  const { readTimestamps } = useReadReceiptsStore();
-  const lastRead = readTimestamps[convo.match_id];
   
   const isUnread = lastMsg 
     && lastMsg.sender_id !== currentUser?.id
-    && (!lastRead || new Date(lastMsg.created_at) > new Date(lastRead));
+    && !lastMsg.read_at;
 
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-all cursor-pointer">

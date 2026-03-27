@@ -15,7 +15,7 @@ class MessageSent implements ShouldBroadcastNow
 
     public function __construct(public Message $message)
     {
-        $this->message->loadMissing('sender:id,name,avatar');
+        $this->message->loadMissing('sender:id,name,avatar', 'conversation:id,match_id');
     }
 
     public function broadcastOn(): array
@@ -38,9 +38,13 @@ class MessageSent implements ShouldBroadcastNow
         return [
             'id' => $this->message->id,
             'conversation_id' => $this->message->conversation_id,
+            'match_id' => $this->message->conversation?->match_id,
             'body' => $this->message->body,
+            'sender_id' => $this->message->sender_id,
             'sender' => $this->message->sender,
+            'read_at' => optional($this->message->read_at)->toISOString(),
             'created_at' => optional($this->message->created_at)->toISOString(),
+            'updated_at' => optional($this->message->updated_at)->toISOString(),
         ];
     }
 }

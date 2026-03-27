@@ -33,6 +33,7 @@ Accept: application/json
 | GET | `/matches` | Yes | List current user matches |
 | GET | `/matches/{id}` | Yes | Match detail with profile + conversation |
 | GET | `/conversations/{matchId}` | Yes | Get/create conversation for match |
+| POST | `/conversations/{matchId}/read` | Yes | Mark incoming conversation messages as read |
 | POST | `/messages` | Yes | Send message to match conversation |
 | POST | `/uploads/avatar` | Yes | Upload avatar image |
 | POST | `/uploads/pitch-deck` | Yes (startup) | Upload startup pitch deck |
@@ -235,6 +236,32 @@ If unauthorized/not found for current user: `404` with `Match tidak ditemukan.`
 
 Unauthorized access: `403` with `Akses percakapan ditolak.`
 
+### POST `/conversations/{matchId}/read`
+- Checks current user belongs to match
+- Creates conversation automatically if not existing
+- Marks unread incoming messages (`sender_id != auth user` and `read_at = null`) as read
+- Returns:
+```json
+{
+  "conversation_id": 2,
+  "read_count": 3,
+  "read_at": "2026-03-27T11:00:00.000000Z",
+  "last_read_message_id": 88
+}
+```
+
+If there is no unread incoming message:
+```json
+{
+  "conversation_id": 2,
+  "read_count": 0,
+  "read_at": null,
+  "last_read_message_id": null
+}
+```
+
+Unauthorized access: `403` with `Akses percakapan ditolak.`
+
 ### POST `/messages`
 Request body:
 ```json
@@ -247,7 +274,7 @@ Validation:
 - `match_id`: required, exists in `matches`
 - `body`: required, string, max 2000
 
-Success `201`: created message with sender relation.
+Success `201`: created message with sender relation and `match_id`.
 Unauthorized: `403`.
 
 ## 7. Uploads
@@ -301,6 +328,12 @@ If not found: `404` with `User tidak ditemukan.`
 - `private-conversation.{conversationId}`
   - Authorized only for users belonging to that conversation’s match
   - Event: `.MessageSent`
+  - Event: `.MessageRead`
+
+- `presence-conversation.presence.{conversationId}`
+  - Authorized only for users belonging to that conversation’s match
+  - Presence members: `{ id, name, avatar }`
+  - Whisper supported for typing indicators
 
 ### Event payloads
 `MatchCreated` payload:
@@ -319,9 +352,24 @@ If not found: `404` with `User tidak ditemukan.`
 {
   "id": 77,
   "conversation_id": 2,
+  "match_id": 12,
   "body": "Halo",
+  "sender_id": 1,
   "sender": { "id": 1, "name": "Startup A", "avatar": null },
-  "created_at": "2026-03-15T10:10:00.000000Z"
+  "read_at": null,
+  "created_at": "2026-03-15T10:10:00.000000Z",
+  "updated_at": "2026-03-15T10:10:00.000000Z"
+}
+```
+
+`MessageRead` payload:
+```json
+{
+  "conversation_id": 2,
+  "reader_id": 9,
+  "reader": { "id": 9, "name": "Talent B", "avatar": null },
+  "read_at": "2026-03-15T10:12:00.000000Z",
+  "last_read_message_id": 77
 }
 ```
 

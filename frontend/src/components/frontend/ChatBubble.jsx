@@ -12,14 +12,14 @@ export default function ChatBubble({ message, isMine }) {
   const initials = senderName.substring(0, 2).toUpperCase()
 
   // WhatsApp style status flag: 'sending', 'sent', 'delivered'
-  // We default to delivered for old messages loaded from DB
-  const status = message.status || 'delivered'
+  const status = message.status || (message.read_at ? 'delivered' : 'sent')
+  const body = message.body || message.message || ''
 
   if (isMine) {
     return (
       <div className="flex flex-col items-end gap-1 ml-auto max-w-[80%]">
         <div style={{ fontFamily: "inter" }} className="bg-[#5f5e5e] px-5 py-4 rounded-[1.25rem] rounded-br-[4px] shadow-[0_4px_8px_rgba(0,0,0,0.05)]">
-          <p className="text-[14px] leading-relaxed text-[#ffffff] break-words">{message.body}</p>
+          <p className="text-[14px] leading-relaxed text-[#ffffff] break-words">{body}</p>
         </div>
         <div className="flex items-center gap-1.5 mr-1 pb-1">
           <span style={{ fontFamily: "inter" }} className="text-[10px] font-bold text-[#5f5e5e]/50 uppercase tracking-wider">
@@ -60,7 +60,7 @@ export default function ChatBubble({ message, isMine }) {
       
       <div className="space-y-1">
         <div style={{ fontFamily: "inter" }} className="bg-[#e8e8e8] px-5 py-4 rounded-[1.25rem] rounded-bl-[4px] shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
-          <p className="text-[14px] leading-relaxed text-[#1a1c1c] break-words">{message.body}</p>
+          <p className="text-[14px] leading-relaxed text-[#1a1c1c] break-words">{body}</p>
         </div>
         <span style={{ fontFamily: "inter" }} className="text-[10px] font-bold text-[#5f5e5e]/50 ml-1 uppercase tracking-wider">
           {senderName} • {time}
